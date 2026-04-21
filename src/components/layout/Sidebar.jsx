@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import {
   LayoutDashboard, Plus, ChevronLeft, ChevronRight,
-  Layers, LogOut, Settings, Search, Folder,
+  Layers, LogOut, Search,
 } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
+import MemberAvatar from '../shared/MemberAvatar'
 
 export default function Sidebar() {
-  const { user, projects, currentProject, view, openProject, goToDashboard, logout } = useApp()
+  const { user, projects, currentProject, view, openProject, goToDashboard, logout, onlineUsers } = useApp()
+  const others = onlineUsers.filter(u => u.userId !== user?.id)
   const [collapsed, setCollapsed] = useState(false)
 
   const initials = user?.name
@@ -86,6 +88,30 @@ export default function Sidebar() {
             )}
           </button>
         ))}
+
+        {/* Online section */}
+        {!collapsed && others.length > 0 && (
+          <>
+            <div className="pt-4 pb-1 px-2">
+              <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block" />
+                Online · {others.length}
+              </span>
+            </div>
+            {others.map(ou => (
+              <div key={ou.userId} className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg">
+                <div className="relative flex-shrink-0">
+                  <MemberAvatar member={{ name: ou.name, avatar: ou.avatar }} size="sm" />
+                  <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-green-400 rounded-full ring-1 ring-surface-900" />
+                </div>
+                <span className="text-xs text-slate-400 truncate flex-1">{ou.name}</span>
+                {ou.view === 'board' && (
+                  <span className="text-[10px] text-slate-600 flex-shrink-0">on board</span>
+                )}
+              </div>
+            ))}
+          </>
+        )}
 
         {/* New project button */}
         <button

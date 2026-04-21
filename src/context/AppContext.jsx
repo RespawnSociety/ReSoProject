@@ -58,8 +58,10 @@ export function AppProvider({ children }) {
   const [view, setView] = useState('dashboard')
   const [isLoading, setIsLoading] = useState(false)
   const [authError, setAuthError] = useState('')
+  const [onlineUsers, setOnlineUsers] = useState([])
   const reloadTimer = useRef(null)
   const ownWrites = useRef(new Set())
+  const presenceRef = useRef(null)
 
   const currentProject = projects.find(p => p.id === currentProjectId) || null
 
@@ -158,6 +160,29 @@ export function AppProvider({ children }) {
       if (reloadTimer.current) clearTimeout(reloadTimer.current)
     }
   }, [user, scheduleReload])
+
+  // ── PRESENCE ──────────────────────────────────────────────────────────────
+
+  useEffect(() => {
+    if (!isSupabaseConfigured || !user) { setOnlineUsers([]); return }
+
+    const ch = supabase.channel('flowboard-presence')
+    ch.on('presence', { event: 'sync' }, () => {
+      setOnlineUsers(Object.values(ch.presenceState()).flat())
+    })
+    .subscribe(async (status) => {
+      if (status !== 'SUBSCRIBED') return
+      await ch.track({ userId: user.id, name: user.name, initials: user.initials, avatar: user.avatar || null, projectId: currentProjectId, view })
+    })
+
+    presenceRef.current = ch
+    return () => { supabase.removeChannel(ch); presenceRef.current = null; setOnlineUsers([]) }
+  }, [user, isSupabaseConfigured])
+
+  useEffect(() => {
+    if (!presenceRef.current || !user) return
+    presenceRef.current.track({ userId: user.id, name: user.name, initials: user.initials, avatar: user.avatar || null, projectId: currentProjectId, view })
+  }, [view, currentProjectId])
 
   // ── AUTH ACTIONS ──────────────────────────────────────────────────────────
 
@@ -428,6 +453,7 @@ export function AppProvider({ children }) {
       isSupabaseConfigured,
       projects, currentProject,
       teamMembers,
+      onlineUsers,
       view,
       login, loginWithGitHub, signup, logout,
       openProject, goToDashboard,

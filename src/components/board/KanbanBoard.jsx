@@ -6,9 +6,6 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
-  DragStartEvent,
-  DragEndEvent,
-  DragOverEvent,
 } from '@dnd-kit/core'
 import { arrayMove } from '@dnd-kit/sortable'
 import Column from './Column'

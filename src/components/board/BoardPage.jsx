@@ -1,14 +1,15 @@
 import { useState } from 'react'
 import {
-  ArrowLeft, Search, Filter, SlidersHorizontal, Plus,
-  ChevronDown, X, LayoutGrid
+  ArrowLeft, Search, Filter, X,
 } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
 import KanbanBoard from './KanbanBoard'
+import MemberAvatar from '../shared/MemberAvatar'
 import { PRIORITY_OPTIONS, LABEL_OPTIONS } from '../../data/mockData'
 
 export default function BoardPage() {
-  const { currentProject, goToDashboard } = useApp()
+  const { currentProject, goToDashboard, onlineUsers, user } = useApp()
+  const boardViewers = onlineUsers.filter(u => u.userId !== user?.id && u.projectId === currentProject?.id)
   const [searchQuery, setSearchQuery] = useState('')
   const [filterPriority, setFilterPriority] = useState('')
   const [filterLabel, setFilterLabel] = useState('')
@@ -47,6 +48,21 @@ export default function BoardPage() {
           </div>
 
           <div className="flex items-center gap-2 ml-auto">
+            {/* Board viewers */}
+            {boardViewers.length > 0 && (
+              <div className="flex items-center gap-1 mr-1" title={`${boardViewers.length} orang lagi lihat board ini`}>
+                {boardViewers.slice(0, 4).map(u => (
+                  <div key={u.userId} className="relative">
+                    <MemberAvatar member={{ name: u.name, avatar: u.avatar }} size="sm" />
+                    <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-green-400 rounded-full ring-1 ring-surface-950" />
+                  </div>
+                ))}
+                {boardViewers.length > 4 && (
+                  <span className="text-xs text-slate-500 ml-0.5">+{boardViewers.length - 4}</span>
+                )}
+              </div>
+            )}
+
             {/* Search */}
             <div className="relative">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
