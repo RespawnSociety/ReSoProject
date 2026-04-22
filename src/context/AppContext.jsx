@@ -118,6 +118,7 @@ export function AppProvider({ children }) {
       ownWrites.current.delete(id)
       return
     }
+    if (ownWrites.current.size > 0) return
     if (reloadTimer.current) clearTimeout(reloadTimer.current)
     reloadTimer.current = setTimeout(loadData, 400)
   }, [loadData])
@@ -340,16 +341,16 @@ export function AppProvider({ children }) {
     const id = generateId('task')
     const task = { id, createdAt: new Date().toISOString().split('T')[0], ...taskData }
 
-    let newColTasks
+    let position = 0
     setProjects(prev => prev.map(p => {
       if (p.id !== projectId) return p
-      newColTasks = [task, ...(p.tasks[columnId] || [])]
-      return { ...p, tasks: { ...p.tasks, [columnId]: newColTasks } }
+      const existing = p.tasks[columnId] || []
+      position = existing.length
+      return { ...p, tasks: { ...p.tasks, [columnId]: [...existing, task] } }
     }))
 
     if (isSupabaseConfigured) {
       ownWrites.current.add(id)
-      const colTasks = newColTasks || []
       const { error } = await supabase.from('tasks').insert({
         id,
         project_id: projectId,
@@ -361,10 +362,11 @@ export function AppProvider({ children }) {
         assignee_id: taskData.assigneeId || null,
         start_date: taskData.startDate || null,
         due_date: taskData.dueDate || null,
-        position: colTasks.length,
+        position,
       })
       if (error) {
         console.error('createTask:', error)
+        ownWrites.current.delete(id)
         setProjects(prev => prev.map(p => {
           if (p.id !== projectId) return p
           return { ...p, tasks: { ...p.tasks, [columnId]: p.tasks[columnId].filter(t => t.id !== id) } }
