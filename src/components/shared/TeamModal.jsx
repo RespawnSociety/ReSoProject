@@ -1,8 +1,10 @@
-import { useState, useMemo, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { X, Check, ChevronDown, UserX } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
 import { ROLE_OPTIONS } from '../../data/mockData'
 import MemberAvatar from './MemberAvatar'
+
+const SUPER_ADMIN_EMAIL = 'adrielanderson.s@gmail.com'
 
 function RoleBadge({ role }) {
   const opt = ROLE_OPTIONS.find(r => r.value === role) || ROLE_OPTIONS[ROLE_OPTIONS.length - 1]
@@ -41,7 +43,7 @@ function RoleDropdown({ currentRole, onChange, disabled }) {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-9 z-20 bg-surface-800 border border-surface-700 rounded-xl shadow-card min-w-[140px] py-1 animate-slide-up">
+        <div className="absolute right-0 top-9 z-[100] bg-surface-800 border border-surface-700 rounded-xl shadow-card min-w-[140px] py-1 animate-slide-up">
           {ROLE_OPTIONS.map(opt => (
             <button
               key={opt.value}
@@ -65,17 +67,17 @@ export { RoleBadge }
 
 export default function TeamModal({ onClose }) {
   const { user, teamMembers, updateMemberRole, updateProfile, kickMember } = useApp()
-  const isAdmin     = user?.role === 'admin'
-  const adminCount  = useMemo(() => teamMembers.filter(m => m.role === 'admin').length, [teamMembers])
-  const isOnlyAdmin = isAdmin && adminCount <= 1
-  const [kickingId, setKickingId]   = useState(null)
-  const [editName, setEditName]     = useState(user?.name || '')
+
+  // Only the super admin email can manage roles
+  const canManageRoles = user?.email === SUPER_ADMIN_EMAIL
+  const isAdmin        = user?.role === 'admin'
+
+  const [kickingId, setKickingId]     = useState(null)
+  const [editName, setEditName]       = useState(user?.name || '')
   const [editingName, setEditingName] = useState(false)
 
   const handleSaveName = () => {
-    if (editName.trim() && editName.trim() !== user?.name) {
-      updateProfile({ name: editName.trim() })
-    }
+    if (editName.trim() && editName.trim() !== user?.name) updateProfile({ name: editName.trim() })
     setEditingName(false)
   }
 
@@ -92,14 +94,18 @@ export default function TeamModal({ onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      onClick={onClose}
+      onWheel={e => e.stopPropagation()}
+    >
       <div className="absolute inset-0 bg-black/70 glass" />
       <div
-        className="relative bg-surface-900 border border-surface-700 rounded-2xl shadow-card w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden animate-slide-up"
+        className="relative bg-surface-900 border border-surface-700 rounded-2xl shadow-card w-full max-w-lg max-h-[85vh] flex flex-col animate-slide-up"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-surface-800">
+        <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-surface-800 rounded-t-2xl">
           <div>
             <h2 className="text-base font-bold text-white">Team Members</h2>
             <p className="text-xs text-slate-500 mt-0.5">{teamMembers.length} member{teamMembers.length !== 1 ? 's' : ''}</p>
@@ -125,31 +131,27 @@ export default function TeamModal({ onClose }) {
                   <button onClick={handleSaveName} className="btn-primary py-1 px-2.5 text-xs">Save</button>
                 </div>
               ) : (
-                <button
-                  onClick={() => setEditingName(true)}
-                  className="text-sm font-semibold text-white hover:text-brand-300 transition-colors text-left"
-                >
+                <button onClick={() => setEditingName(true)} className="text-sm font-semibold text-white hover:text-brand-300 transition-colors text-left">
                   {user?.name}
                 </button>
               )}
               <p className="text-xs text-slate-500 truncate mt-0.5">{user?.email}</p>
             </div>
             <div className="flex flex-col items-end gap-1">
-              {/* Non-admin cannot change own role */}
               <RoleDropdown
                 currentRole={user?.role || 'member'}
                 onChange={role => updateMemberRole(user.id, role)}
-                disabled={!isAdmin || isOnlyAdmin}
+                disabled={!canManageRoles}
               />
-              {isOnlyAdmin && (
-                <span className="text-[10px] text-slate-600">satu-satunya admin</span>
-              )}
             </div>
           </div>
         </div>
 
         {/* Team list — scrollable */}
-        <div className="flex-1 overflow-y-auto px-6 py-4">
+        <div
+          className="flex-1 overflow-y-auto px-6 py-4"
+          onWheel={e => e.stopPropagation()}
+        >
           <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mb-3">All Members</p>
           <div className="space-y-1 pb-2">
             {teamMembers.map(member => (
@@ -166,9 +168,9 @@ export default function TeamModal({ onClose }) {
                   <RoleDropdown
                     currentRole={member.role || 'member'}
                     onChange={role => updateMemberRole(member.id, role)}
-                    disabled={!isAdmin || (member.id === user?.id && isOnlyAdmin)}
+                    disabled={!canManageRoles || member.id === user?.id}
                   />
-                  {isAdmin && member.id !== user?.id && member.role !== 'admin' && (
+                  {canManageRoles && member.id !== user?.id && member.role !== 'admin' && (
                     <button
                       onClick={() => handleKick(member)}
                       disabled={kickingId === member.id}
@@ -184,9 +186,9 @@ export default function TeamModal({ onClose }) {
           </div>
         </div>
 
-        {!isAdmin && (
-          <div className="flex-shrink-0 px-6 pb-4">
-            <p className="text-xs text-slate-600 text-center">Only admins can change roles</p>
+        {!canManageRoles && (
+          <div className="flex-shrink-0 px-6 pb-4 rounded-b-2xl">
+            <p className="text-xs text-slate-600 text-center">Only admin can change roles</p>
           </div>
         )}
       </div>
