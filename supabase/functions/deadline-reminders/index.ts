@@ -4,8 +4,9 @@ const RESEND_API_KEY       = Deno.env.get('RESEND_API_KEY')!
 const SUPABASE_URL         = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
-const APP_URL = 'https://project.respawnsociety.web.id'
-const FROM    = 'FlowBoard <onboarding@resend.dev>'
+const APP_URL    = 'https://project.respawnsociety.web.id'
+const FROM       = 'FlowBoard <onboarding@resend.dev>'
+const ADMIN_EMAIL = 'adrielanderson.s@gmail.com'
 
 Deno.serve(async () => {
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
@@ -13,7 +14,7 @@ Deno.serve(async () => {
   const today    = new Date().toISOString().split('T')[0]
   const tomorrow = new Date(Date.now() + 86_400_000).toISOString().split('T')[0]
 
-  // Fetch tasks with upcoming deadlines that have assignees
+  // Fetch tasks due today or tomorrow that have at least 1 assignee
   const { data: tasks, error: te } = await supabase
     .from('tasks')
     .select('id, title, due_date, priority, assignee_ids, project:projects(name, emoji)')
@@ -26,16 +27,8 @@ Deno.serve(async () => {
     return new Response(JSON.stringify({ sent: 0, message: 'No upcoming deadlines' }), { status: 200 })
   }
 
-  // Fetch admin profiles
-  const { data: admins } = await supabase
-    .from('profiles')
-    .select('id, email, name')
-    .eq('role', 'admin')
-
-  const admin = admins?.[0] // primary admin
-
-  // Build send queue: per task → 1 assignee (first) + admin (if different)
-  // Multiple tasks are queued one by one
+  // Build queue: per task → [first_assignee_email, adrielanderson.s@gmail.com]
+  // If first assignee IS adrielanderson.s@gmail.com, only 1 email for that task
   const queue: Array<{ email: string; name: string; task: any }> = []
 
   for (const task of activeTasks) {
@@ -53,9 +46,9 @@ Deno.serve(async () => {
       queue.push({ email: firstAssignee.email, name: firstAssignee.name || 'Team', task })
     }
 
-    // Admin gets notified too (if not the same person as assignee)
-    if (admin?.email && admin.id !== assigneeIds[0]) {
-      queue.push({ email: admin.email, name: admin.name || 'Admin', task })
+    // Always notify admin (adrielanderson.s@gmail.com) unless they're already the first assignee
+    if (firstAssignee?.email !== ADMIN_EMAIL) {
+      queue.push({ email: ADMIN_EMAIL, name: 'Adriel', task })
     }
   }
 
@@ -84,7 +77,6 @@ Deno.serve(async () => {
       errors.push(`${item.email}: ${await res.text()}`)
     }
 
-    // Wait 300ms between each email
     await new Promise(r => setTimeout(r, 300))
   }
 
