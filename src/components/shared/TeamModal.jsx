@@ -63,7 +63,9 @@ export { RoleBadge }
 
 export default function TeamModal({ onClose }) {
   const { user, teamMembers, updateMemberRole, updateProfile } = useApp()
-  const isAdmin = user?.role === 'admin'
+  const isAdmin     = user?.role === 'admin'
+  const adminCount  = teamMembers.filter(m => m.role === 'admin').length
+  const isOnlyAdmin = isAdmin && adminCount <= 1
 
   const [editName, setEditName] = useState(user?.name || '')
   const [editingName, setEditingName] = useState(false)
@@ -118,11 +120,16 @@ export default function TeamModal({ onClose }) {
               )}
               <p className="text-xs text-slate-500 truncate mt-0.5">{user?.email}</p>
             </div>
-            <RoleDropdown
-              currentRole={user?.role || 'member'}
-              onChange={role => updateMemberRole(user.id, role)}
-              disabled={!isAdmin && user?.role !== 'member'}
-            />
+            <div className="flex flex-col items-end gap-1">
+              <RoleDropdown
+                currentRole={user?.role || 'member'}
+                onChange={role => updateMemberRole(user.id, role)}
+                disabled={isOnlyAdmin}
+              />
+              {isOnlyAdmin && (
+                <span className="text-[10px] text-slate-600">satu-satunya admin</span>
+              )}
+            </div>
           </div>
         </div>
 
