@@ -1,16 +1,27 @@
+export const ROLE_OPTIONS = [
+  { value: 'admin',     label: 'Admin',     color: '#6366F1' },
+  { value: 'pm',        label: 'PM',        color: '#8B5CF6' },
+  { value: 'developer', label: 'Developer', color: '#3B82F6' },
+  { value: 'designer',  label: 'Designer',  color: '#EC4899' },
+  { value: 'qa',        label: 'QA',        color: '#10B981' },
+  { value: 'devops',    label: 'DevOps',    color: '#F97316' },
+  { value: 'member',    label: 'Member',    color: '#6B7280' },
+]
+
 export const MOCK_USER = {
   id: 'user-1',
   name: 'Adriel Dev',
   email: 'developer.ai05@sungaibudi.com',
   avatar: null,
   initials: 'AD',
+  role: 'admin',
 }
 
 export const MOCK_TEAM_MEMBERS = [
-  { id: 'user-1', name: 'Adriel Dev',  email: 'adriel@dev.com',  avatar: null },
-  { id: 'user-2', name: 'Budi S',      email: 'budi@dev.com',    avatar: null },
-  { id: 'user-3', name: 'Citra K',     email: 'citra@dev.com',   avatar: null },
-  { id: 'user-4', name: 'Dimas R',     email: 'dimas@dev.com',   avatar: null },
+  { id: 'user-1', name: 'Adriel Dev',  email: 'adriel@dev.com',  avatar: null, role: 'admin'     },
+  { id: 'user-2', name: 'Budi S',      email: 'budi@dev.com',    avatar: null, role: 'developer' },
+  { id: 'user-3', name: 'Citra K',     email: 'citra@dev.com',   avatar: null, role: 'designer'  },
+  { id: 'user-4', name: 'Dimas R',     email: 'dimas@dev.com',   avatar: null, role: 'qa'        },
 ]
 
 export const COLUMN_CONFIGS = [

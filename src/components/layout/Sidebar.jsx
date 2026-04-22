@@ -1,14 +1,18 @@
 import { useState } from 'react'
 import {
   LayoutDashboard, Plus, ChevronLeft, ChevronRight,
-  Layers, LogOut, Search,
+  Layers, LogOut, Search, Users,
 } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
 import MemberAvatar from '../shared/MemberAvatar'
+import TeamModal from '../shared/TeamModal'
+import { ROLE_OPTIONS } from '../../data/mockData'
 
 export default function Sidebar() {
   const { user, projects, currentProject, view, openProject, goToDashboard, logout, onlineUsers } = useApp()
   const others = onlineUsers.filter(u => u.userId !== user?.id)
+  const [showTeam, setShowTeam] = useState(false)
+  const userRole = ROLE_OPTIONS.find(r => r.value === user?.role)
   const [collapsed, setCollapsed] = useState(false)
 
   const initials = user?.name
@@ -52,6 +56,13 @@ export default function Sidebar() {
           collapsed={collapsed}
           active={false}
           onClick={() => {}}
+        />
+        <NavItem
+          icon={Users}
+          label="Team"
+          collapsed={collapsed}
+          active={false}
+          onClick={() => setShowTeam(true)}
         />
 
         {/* Projects section */}
@@ -128,15 +139,21 @@ export default function Sidebar() {
 
       {/* User footer */}
       <div className={`border-t border-surface-800 p-3 ${collapsed ? 'flex justify-center' : 'flex items-center gap-3'}`}>
-        <div className="w-8 h-8 rounded-full bg-brand-600/30 border border-brand-500/40 flex items-center justify-center flex-shrink-0">
-          <span className="text-xs font-semibold text-brand-300">{initials}</span>
-        </div>
+        <button onClick={() => setShowTeam(true)} className="flex-shrink-0">
+          <div className="w-8 h-8 rounded-full bg-brand-600/30 border border-brand-500/40 flex items-center justify-center">
+            <span className="text-xs font-semibold text-brand-300">{initials}</span>
+          </div>
+        </button>
         {!collapsed && (
           <>
-            <div className="flex-1 min-w-0">
+            <button onClick={() => setShowTeam(true)} className="flex-1 min-w-0 text-left">
               <p className="text-sm font-medium text-slate-200 truncate">{user?.name}</p>
-              <p className="text-xs text-slate-500 truncate">{user?.email}</p>
-            </div>
+              {userRole && (
+                <span className="text-[10px] font-semibold" style={{ color: userRole.color }}>
+                  {userRole.label}
+                </span>
+              )}
+            </button>
             <button
               onClick={logout}
               className="text-slate-500 hover:text-slate-300 transition-colors p-1 rounded-lg hover:bg-surface-800"
@@ -147,6 +164,8 @@ export default function Sidebar() {
           </>
         )}
       </div>
+
+      {showTeam && <TeamModal onClose={() => setShowTeam(false)} />}
     </aside>
   )
 }

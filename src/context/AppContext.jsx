@@ -77,17 +77,24 @@ export function AppProvider({ children }) {
     ] = await Promise.all([
       supabase.from('projects').select('*').order('created_at'),
       supabase.from('tasks').select('*').order('position'),
-      supabase.from('profiles').select('id, name, email, avatar_url').order('name'),
+      supabase.from('profiles').select('id, name, email, avatar_url, role').order('name'),
     ])
 
     if (pe || te || me) { console.error('loadData:', pe || te || me); return }
 
-    setTeamMembers((mRows || []).map(m => ({
+    const members = (mRows || []).map(m => ({
       id: m.id,
       name: m.name || m.email?.split('@')[0] || 'User',
       email: m.email || '',
       avatar: m.avatar_url || null,
-    })))
+      role: m.role || 'member',
+    }))
+    setTeamMembers(members)
+    setUser(prev => {
+      if (!prev) return prev
+      const mine = members.find(m => m.id === prev.id)
+      return mine ? { ...prev, role: mine.role } : prev
+    })
 
     setProjects((pRows || []).map(row => ({
       id: row.id,
@@ -429,6 +436,24 @@ export function AppProvider({ children }) {
     }
   }, [])
 
+  const updateMemberRole = useCallback(async (memberId, role) => {
+    setTeamMembers(prev => prev.map(m => m.id === memberId ? { ...m, role } : m))
+    if (memberId === user?.id) setUser(prev => prev ? { ...prev, role } : prev)
+    if (isSupabaseConfigured) {
+      const { error } = await supabase.from('profiles').update({ role }).eq('id', memberId)
+      if (error) console.error('updateMemberRole:', error)
+    }
+  }, [user, isSupabaseConfigured])
+
+  const updateProfile = useCallback(async (updates) => {
+    setUser(prev => prev ? { ...prev, ...updates } : prev)
+    setTeamMembers(prev => prev.map(m => m.id === user?.id ? { ...m, ...updates } : m))
+    if (isSupabaseConfigured) {
+      const { error } = await supabase.from('profiles').update(updates).eq('id', user?.id)
+      if (error) console.error('updateProfile:', error)
+    }
+  }, [user, isSupabaseConfigured])
+
   const reorderTask = useCallback(async (projectId, columnId, fromIndex, toIndex) => {
     let newTasks
     setProjects(prev => prev.map(p => {
@@ -456,6 +481,7 @@ export function AppProvider({ children }) {
       onlineUsers,
       view,
       login, loginWithGitHub, signup, logout,
+      updateProfile, updateMemberRole,
       openProject, goToDashboard,
       createProject, deleteProject,
       createTask, updateTask, deleteTask,
