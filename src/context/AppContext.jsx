@@ -349,6 +349,7 @@ export function AppProvider({ children }) {
 
     if (isSupabaseConfigured) {
       ownWrites.current.add(id)
+      const colTasks = newColTasks || []
       const { error } = await supabase.from('tasks').insert({
         id,
         project_id: projectId,
@@ -360,7 +361,7 @@ export function AppProvider({ children }) {
         assignee_id: taskData.assigneeId || null,
         start_date: taskData.startDate || null,
         due_date: taskData.dueDate || null,
-        position: 0,
+        position: colTasks.length,
       })
       if (error) {
         console.error('createTask:', error)
@@ -369,12 +370,6 @@ export function AppProvider({ children }) {
           return { ...p, tasks: { ...p.tasks, [columnId]: p.tasks[columnId].filter(t => t.id !== id) } }
         }))
         throw error
-      }
-      if (newColTasks) {
-        newColTasks.forEach((t, i) => {
-          ownWrites.current.add(t.id)
-          supabase.from('tasks').update({ position: i }).eq('id', t.id)
-        })
       }
     }
 
