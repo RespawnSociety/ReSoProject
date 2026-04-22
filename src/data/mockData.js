@@ -17,12 +17,7 @@ export const MOCK_USER = {
   role: 'admin',
 }
 
-export const MOCK_TEAM_MEMBERS = [
-  { id: 'user-1', name: 'Adriel Dev',  email: 'adriel@dev.com',  avatar: null, role: 'admin'     },
-  { id: 'user-2', name: 'Budi S',      email: 'budi@dev.com',    avatar: null, role: 'developer' },
-  { id: 'user-3', name: 'Citra K',     email: 'citra@dev.com',   avatar: null, role: 'designer'  },
-  { id: 'user-4', name: 'Dimas R',     email: 'dimas@dev.com',   avatar: null, role: 'qa'        },
-]
+export const MOCK_TEAM_MEMBERS = []
 
 export const COLUMN_CONFIGS = [
   { id: 'backlog',     title: 'Backlog',      color: '#6B7280', limit: null },
