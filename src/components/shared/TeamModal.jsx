@@ -150,7 +150,7 @@ export default function TeamModal({ onClose }) {
                 <RoleDropdown
                   currentRole={member.role || 'member'}
                   onChange={role => updateMemberRole(member.id, role)}
-                  disabled={!isAdmin}
+                  disabled={!isAdmin || (member.id === user?.id && isOnlyAdmin)}
                 />
               </div>
             ))}
