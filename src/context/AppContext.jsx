@@ -127,17 +127,20 @@ export function AppProvider({ children }) {
   useEffect(() => {
     if (!isSupabaseConfigured) return
 
+    const fetchAndSetUser = async (sbUser) => {
+      const base = mapSupabaseUser(sbUser)
+      const { data: profile } = await supabase.from('profiles').select('role').eq('id', sbUser.id).single()
+      setUser({ ...base, role: profile?.role || 'member' })
+      loadData()
+    }
+
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        setUser(mapSupabaseUser(session.user))
-        loadData()
-      }
+      if (session?.user) fetchAndSetUser(session.user)
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
-        setUser(mapSupabaseUser(session.user))
-        loadData()
+        fetchAndSetUser(session.user)
       } else {
         setUser(null)
         setProjects([])
@@ -445,11 +448,11 @@ export function AppProvider({ children }) {
     }
   }, [user, isSupabaseConfigured])
 
-  const updateProfile = useCallback(async (updates) => {
-    setUser(prev => prev ? { ...prev, ...updates } : prev)
-    setTeamMembers(prev => prev.map(m => m.id === user?.id ? { ...m, ...updates } : m))
+  const updateProfile = useCallback(async ({ name }) => {
+    setUser(prev => prev ? { ...prev, name } : prev)
+    setTeamMembers(prev => prev.map(m => m.id === user?.id ? { ...m, name } : m))
     if (isSupabaseConfigured) {
-      const { error } = await supabase.from('profiles').update(updates).eq('id', user?.id)
+      const { error } = await supabase.from('profiles').update({ name }).eq('id', user?.id)
       if (error) console.error('updateProfile:', error)
     }
   }, [user, isSupabaseConfigured])

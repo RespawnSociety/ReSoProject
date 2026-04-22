@@ -3,9 +3,10 @@ import {
   X, Trash2, Calendar, Tag, AlignLeft,
   ChevronDown, Save, UserCircle,
 } from 'lucide-react'
-import { LABEL_OPTIONS, PRIORITY_OPTIONS, COLUMN_CONFIGS, ROLE_OPTIONS } from '../../data/mockData'
+import { LABEL_OPTIONS, PRIORITY_OPTIONS, COLUMN_CONFIGS } from '../../data/mockData'
 import { useApp } from '../../context/AppContext'
 import MemberAvatar from '../shared/MemberAvatar'
+import { RoleBadge } from '../shared/TeamModal'
 
 const PRIORITY_STYLES = {
   urgent: { dot: 'bg-red-500',    text: 'text-red-400',    bg: 'bg-red-500/10 border-red-500/30' },
@@ -211,14 +212,7 @@ export default function TaskModal({ task, columnId, projectKey, onClose, onSave,
                         <div className="flex-1 min-w-0 text-left">
                           <p className="font-medium truncate">{member.name}</p>
                           <div className="flex items-center gap-1.5 mt-0.5">
-                            {member.role && (() => {
-                              const ro = ROLE_OPTIONS.find(r => r.value === member.role)
-                              return ro ? (
-                                <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: ro.color + '25', color: ro.color }}>
-                                  {ro.label}
-                                </span>
-                              ) : null
-                            })()}
+                            {member.role && <RoleBadge role={member.role} />}
                             <p className="text-[10px] text-slate-500 truncate">{member.email}</p>
                           </div>
                         </div>

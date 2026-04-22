@@ -24,38 +24,33 @@ Deno.serve(async () => {
     return new Response(JSON.stringify({ error: error.message }), { status: 500 })
   }
 
-  let sent = 0
-  const errors: string[] = []
+  const results = await Promise.all(
+    (tasks ?? [])
+      .filter(task => (task.assignee as any)?.email)
+      .map(async task => {
+        const email    = (task.assignee as any).email
+        const isToday  = task.due_date === today
+        const project  = task.project as any
 
-  for (const task of tasks ?? []) {
-    const email = (task.assignee as any)?.email
-    if (!email) continue
+        const res = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            from: 'FlowBoard <onboarding@resend.dev>',
+            to: [email],
+            subject: `${isToday ? '⏰' : '📅'} Deadline task: ${task.title}`,
+            html: buildEmail(task, project, isToday ? '🔴 Hari ini' : '🟡 Besok', isToday),
+          }),
+        })
 
-    const isToday  = task.due_date === today
-    const dueLabel = isToday ? '🔴 Hari ini' : '🟡 Besok'
-    const project  = task.project as any
+        if (res.ok) return { ok: true }
+        const body = await res.text()
+        return { ok: false, err: `${email}: ${body}` }
+      })
+  )
 
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${RESEND_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: 'FlowBoard <onboarding@resend.dev>',
-        to: [email],
-        subject: `${isToday ? '⏰' : '📅'} Deadline task: ${task.title}`,
-        html: buildEmail(task, project, dueLabel, isToday),
-      }),
-    })
-
-    if (res.ok) {
-      sent++
-    } else {
-      const body = await res.text()
-      errors.push(`${email}: ${body}`)
-    }
-  }
+  const sent   = results.filter(r => r.ok).length
+  const errors = results.filter(r => !r.ok).map(r => (r as any).err)
 
   return new Response(JSON.stringify({ sent, errors, total: tasks?.length ?? 0 }), {
     status: 200,

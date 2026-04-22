@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { X, Check, ChevronDown } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
 import { ROLE_OPTIONS } from '../../data/mockData'
@@ -64,7 +64,7 @@ export { RoleBadge }
 export default function TeamModal({ onClose }) {
   const { user, teamMembers, updateMemberRole, updateProfile } = useApp()
   const isAdmin     = user?.role === 'admin'
-  const adminCount  = teamMembers.filter(m => m.role === 'admin').length
+  const adminCount  = useMemo(() => teamMembers.filter(m => m.role === 'admin').length, [teamMembers])
   const isOnlyAdmin = isAdmin && adminCount <= 1
 
   const [editName, setEditName] = useState(user?.name || '')
