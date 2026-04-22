@@ -457,6 +457,24 @@ export function AppProvider({ children }) {
     }
   }, [user, isSupabaseConfigured])
 
+  const kickMember = useCallback(async (memberId) => {
+    if (!isSupabaseConfigured) return
+    const { data: { session } } = await supabase.auth.getSession()
+    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/kick-member`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session?.access_token}`,
+      },
+      body: JSON.stringify({ userId: memberId }),
+    })
+    if (!res.ok) {
+      const err = await res.text()
+      throw new Error(err)
+    }
+    setTeamMembers(prev => prev.filter(m => m.id !== memberId))
+  }, [isSupabaseConfigured])
+
   const reorderTask = useCallback(async (projectId, columnId, fromIndex, toIndex) => {
     let newTasks
     setProjects(prev => prev.map(p => {
@@ -484,7 +502,7 @@ export function AppProvider({ children }) {
       onlineUsers,
       view,
       login, loginWithGitHub, signup, logout,
-      updateProfile, updateMemberRole,
+      updateProfile, updateMemberRole, kickMember,
       openProject, goToDashboard,
       createProject, deleteProject,
       createTask, updateTask, deleteTask,

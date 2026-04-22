@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { X, Check, ChevronDown } from 'lucide-react'
+import { X, Check, ChevronDown, UserX } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
 import { ROLE_OPTIONS } from '../../data/mockData'
 import MemberAvatar from './MemberAvatar'
@@ -62,10 +62,23 @@ function RoleDropdown({ currentRole, onChange, disabled }) {
 export { RoleBadge }
 
 export default function TeamModal({ onClose }) {
-  const { user, teamMembers, updateMemberRole, updateProfile } = useApp()
+  const { user, teamMembers, updateMemberRole, updateProfile, kickMember } = useApp()
   const isAdmin     = user?.role === 'admin'
   const adminCount  = useMemo(() => teamMembers.filter(m => m.role === 'admin').length, [teamMembers])
   const isOnlyAdmin = isAdmin && adminCount <= 1
+  const [kickingId, setKickingId] = useState(null)
+
+  const handleKick = async (member) => {
+    if (!confirm(`Kick ${member.name}? Mereka tidak akan bisa login lagi.`)) return
+    setKickingId(member.id)
+    try {
+      await kickMember(member.id)
+    } catch (err) {
+      alert(err.message || 'Gagal kick member')
+    } finally {
+      setKickingId(null)
+    }
+  }
 
   const [editName, setEditName] = useState(user?.name || '')
   const [editingName, setEditingName] = useState(false)
@@ -81,7 +94,7 @@ export default function TeamModal({ onClose }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="absolute inset-0 bg-black/70 glass" />
       <div
-        className="relative bg-surface-900 border border-surface-700 rounded-2xl shadow-card w-full max-w-lg animate-slide-up"
+        className="relative bg-surface-900 border border-surface-700 rounded-2xl shadow-card w-full max-w-lg max-h-[90vh] flex flex-col animate-slide-up"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
@@ -134,7 +147,7 @@ export default function TeamModal({ onClose }) {
         </div>
 
         {/* Team list */}
-        <div className="px-6 py-4 max-h-80 overflow-y-auto">
+        <div className="px-6 py-4 flex-1 overflow-y-auto min-h-0">
           <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mb-3">All Members</p>
           <div className="space-y-1">
             {teamMembers.map(member => (
@@ -147,11 +160,23 @@ export default function TeamModal({ onClose }) {
                   </p>
                   <p className="text-[11px] text-slate-500 truncate">{member.email}</p>
                 </div>
-                <RoleDropdown
-                  currentRole={member.role || 'member'}
-                  onChange={role => updateMemberRole(member.id, role)}
-                  disabled={!isAdmin || (member.id === user?.id && isOnlyAdmin)}
-                />
+                <div className="flex items-center gap-1.5">
+                  <RoleDropdown
+                    currentRole={member.role || 'member'}
+                    onChange={role => updateMemberRole(member.id, role)}
+                    disabled={!isAdmin || (member.id === user?.id && isOnlyAdmin)}
+                  />
+                  {isAdmin && member.id !== user?.id && member.role !== 'admin' && (
+                    <button
+                      onClick={() => handleKick(member)}
+                      disabled={kickingId === member.id}
+                      className="p-1.5 rounded-lg text-slate-600 hover:text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-40"
+                      title="Kick member"
+                    >
+                      <UserX size={14} />
+                    </button>
+                  )}
+                </div>
               </div>
             ))}
           </div>
