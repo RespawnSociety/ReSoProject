@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import { X, Check, ChevronDown, UserX } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
 import { ROLE_OPTIONS } from '../../data/mockData'
@@ -18,12 +18,20 @@ function RoleBadge({ role }) {
 
 function RoleDropdown({ currentRole, onChange, disabled }) {
   const [open, setOpen] = useState(false)
+  const ref = useRef(null)
   const current = ROLE_OPTIONS.find(r => r.value === currentRole) || ROLE_OPTIONS[ROLE_OPTIONS.length - 1]
+
+  useEffect(() => {
+    if (!open) return
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
 
   if (disabled) return <RoleBadge role={currentRole} />
 
   return (
-    <div className="relative">
+    <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen(v => !v)}
         className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg border bg-surface-800 border-surface-700 hover:border-surface-600 text-slate-300 cursor-pointer transition-all"
@@ -33,24 +41,21 @@ function RoleDropdown({ currentRole, onChange, disabled }) {
       </button>
 
       {open && (
-        <>
-          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-9 z-20 bg-surface-800 border border-surface-700 rounded-xl shadow-card min-w-[140px] py-1 animate-slide-up">
-            {ROLE_OPTIONS.map(opt => (
-              <button
-                key={opt.value}
-                onClick={() => { onChange(opt.value); setOpen(false) }}
-                className="w-full flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-surface-700 transition-colors"
-              >
-                <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: opt.color }} />
-                <span className={currentRole === opt.value ? 'text-white font-medium' : 'text-slate-300'}>
-                  {opt.label}
-                </span>
-                {currentRole === opt.value && <Check size={12} className="ml-auto text-brand-400" />}
-              </button>
-            ))}
-          </div>
-        </>
+        <div className="absolute right-0 top-9 z-20 bg-surface-800 border border-surface-700 rounded-xl shadow-card min-w-[140px] py-1 animate-slide-up">
+          {ROLE_OPTIONS.map(opt => (
+            <button
+              key={opt.value}
+              onClick={() => { onChange(opt.value); setOpen(false) }}
+              className="w-full flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-surface-700 transition-colors"
+            >
+              <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: opt.color }} />
+              <span className={currentRole === opt.value ? 'text-white font-medium' : 'text-slate-300'}>
+                {opt.label}
+              </span>
+              {currentRole === opt.value && <Check size={12} className="ml-auto text-brand-400" />}
+            </button>
+          ))}
+        </div>
       )}
     </div>
   )
