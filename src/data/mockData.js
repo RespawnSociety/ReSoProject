@@ -45,10 +45,8 @@ export const LABEL_OPTIONS = [
   { value: 'testing',   label: 'Testing',   color: '#4ADE80' },
 ]
 
-let idCounter = 100
-
 export function generateId(prefix = 'task') {
-  return `${prefix}-${++idCounter}`
+  return `${prefix}-${crypto.randomUUID()}`
 }
 
 export const INITIAL_PROJECTS = [
