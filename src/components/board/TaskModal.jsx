@@ -22,7 +22,7 @@ export default function TaskModal({ task, columnId, projectKey, onClose, onSave,
   const [description, setDescription]   = useState(task?.description || '')
   const [priority, setPriority]         = useState(task?.priority || 'medium')
   const [labels, setLabels]             = useState(task?.labels || [])
-  const [assigneeId, setAssigneeId]     = useState(task?.assigneeId || null)
+  const [assigneeIds, setAssigneeIds]   = useState(task?.assigneeIds || [])
   const [startDate, setStartDate]       = useState(task?.startDate || '')
   const [dueDate, setDueDate]           = useState(task?.dueDate || '')
   const [currentColumn, setCurrentColumn] = useState(columnId)
@@ -34,7 +34,10 @@ export default function TaskModal({ task, columnId, projectKey, onClose, onSave,
 
   const isNew = !task?.id
   const taskKey = task?.id ? `${projectKey}-${task.id.split('-')[1]}` : 'New'
-  const assignedMember = assigneeId ? teamMembers.find(m => m.id === assigneeId) : null
+  const assignedMembers = teamMembers.filter(m => assigneeIds.includes(m.id))
+  const toggleAssignee = (id) => setAssigneeIds(prev =>
+    prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+  )
 
   const handleSave = () => {
     if (!title.trim()) return
@@ -43,7 +46,7 @@ export default function TaskModal({ task, columnId, projectKey, onClose, onSave,
       description,
       priority,
       labels,
-      assigneeId: assigneeId || null,
+      assigneeIds,
       startDate: startDate || null,
       dueDate: dueDate || null,
     })
@@ -165,16 +168,18 @@ export default function TaskModal({ task, columnId, projectKey, onClose, onSave,
               )}
             </div>
 
-            {/* Assignee */}
+            {/* Assignees */}
             <div className="relative">
               <button
                 onClick={() => setShowAssigneeMenu(v => !v)}
                 className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-800 border border-surface-700 text-xs text-slate-300 hover:border-surface-600 transition-colors"
               >
-                {assignedMember ? (
+                {assignedMembers.length > 0 ? (
                   <>
-                    <MemberAvatar member={assignedMember} size="xs" />
-                    <span className="max-w-[80px] truncate">{assignedMember.name.split(' ')[0]}</span>
+                    <div className="flex -space-x-1">
+                      {assignedMembers.slice(0, 3).map(m => <MemberAvatar key={m.id} member={m} size="xs" />)}
+                    </div>
+                    <span>{assignedMembers.length} assigned</span>
                   </>
                 ) : (
                   <>
@@ -187,40 +192,38 @@ export default function TaskModal({ task, columnId, projectKey, onClose, onSave,
               {showAssigneeMenu && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setShowAssigneeMenu(false)} />
-                  <div className="absolute left-0 top-10 z-20 bg-surface-800 border border-surface-700 rounded-xl shadow-card min-w-[180px] py-1.5 animate-slide-up">
+                  <div className="absolute left-0 top-10 z-20 bg-surface-800 border border-surface-700 rounded-xl shadow-card min-w-[200px] py-1.5 animate-slide-up">
                     <button
-                      onClick={() => { setAssigneeId(null); setShowAssigneeMenu(false) }}
+                      onClick={() => setAssigneeIds([])}
                       className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-slate-400 hover:bg-surface-700 hover:text-white transition-colors"
                     >
                       <div className="w-6 h-6 rounded-full border border-dashed border-slate-600 flex items-center justify-center flex-shrink-0">
                         <UserCircle size={12} className="text-slate-500" />
                       </div>
-                      Unassigned
+                      Clear all
                     </button>
                     <div className="mx-3 my-1 border-t border-surface-700" />
                     {teamMembers.length === 0 ? (
                       <p className="px-3 py-2 text-xs text-slate-500">No team members yet</p>
-                    ) : teamMembers.map(member => (
-                      <button
-                        key={member.id}
-                        onClick={() => { setAssigneeId(member.id); setShowAssigneeMenu(false) }}
-                        className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm transition-colors hover:bg-surface-700 ${
-                          assigneeId === member.id ? 'text-white bg-surface-700/50' : 'text-slate-300'
-                        }`}
-                      >
-                        <MemberAvatar member={member} size="sm" />
-                        <div className="flex-1 min-w-0 text-left">
-                          <p className="font-medium truncate">{member.name}</p>
-                          <div className="flex items-center gap-1.5 mt-0.5">
+                    ) : teamMembers.map(member => {
+                      const selected = assigneeIds.includes(member.id)
+                      return (
+                        <button
+                          key={member.id}
+                          onClick={() => toggleAssignee(member.id)}
+                          className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm transition-colors hover:bg-surface-700 ${selected ? 'text-white bg-surface-700/50' : 'text-slate-300'}`}
+                        >
+                          <MemberAvatar member={member} size="sm" />
+                          <div className="flex-1 min-w-0 text-left">
+                            <p className="font-medium truncate">{member.name}</p>
                             {member.role && <RoleBadge role={member.role} />}
-                            <p className="text-[10px] text-slate-500 truncate">{member.email}</p>
                           </div>
-                        </div>
-                        {assigneeId === member.id && (
-                          <div className="w-4 h-4 rounded bg-brand-600 flex items-center justify-center text-white text-[10px] flex-shrink-0">✓</div>
-                        )}
-                      </button>
-                    ))}
+                          <div className={`w-4 h-4 rounded border flex-shrink-0 flex items-center justify-center text-[10px] ${selected ? 'bg-brand-600 border-brand-600 text-white' : 'border-slate-600'}`}>
+                            {selected && '✓'}
+                          </div>
+                        </button>
+                      )
+                    })}
                   </div>
                 </>
               )}
@@ -325,13 +328,17 @@ export default function TaskModal({ task, columnId, projectKey, onClose, onSave,
         <div className="flex items-center justify-between px-6 py-4 border-t border-surface-800">
           {/* Assigned member preview */}
           <div className="flex items-center gap-2">
-            {assignedMember ? (
+            {assignedMembers.length > 0 ? (
               <>
-                <MemberAvatar member={assignedMember} size="md" />
-                <div>
-                  <p className="text-xs font-medium text-slate-300">{assignedMember.name}</p>
-                  <p className="text-[10px] text-slate-500">Assignee</p>
+                <div className="flex -space-x-2">
+                  {assignedMembers.slice(0, 4).map(m => <MemberAvatar key={m.id} member={m} size="md" />)}
+                  {assignedMembers.length > 4 && (
+                    <div className="w-7 h-7 rounded-full bg-surface-700 border border-surface-600 flex items-center justify-center text-[10px] text-slate-400">
+                      +{assignedMembers.length - 4}
+                    </div>
+                  )}
                 </div>
+                <p className="text-xs text-slate-400">{assignedMembers.length} assignee{assignedMembers.length > 1 ? 's' : ''}</p>
               </>
             ) : (
               <p className="text-xs text-slate-600">No assignee</p>

@@ -50,7 +50,7 @@ export default function TaskCard({ task, onClick }) {
 
   const labels = (task.labels || []).map(l => LABEL_OPTIONS.find(o => o.value === l)).filter(Boolean)
   const dueInfo = formatDate(task.dueDate)
-  const assignee = task.assigneeId ? teamMembers.find(m => m.id === task.assigneeId) : null
+  const assignees = (task.assigneeIds || []).map(id => teamMembers.find(m => m.id === id)).filter(Boolean)
   const hasDateRange = task.startDate && task.dueDate
 
   return (
@@ -116,10 +116,15 @@ export default function TaskCard({ task, onClick }) {
           </div>
         )}
 
-        {/* Assignee avatar pushed to right */}
-        {assignee && (
-          <div className="ml-auto">
-            <MemberAvatar member={assignee} size="sm" />
+        {/* Assignee avatars pushed to right */}
+        {assignees.length > 0 && (
+          <div className="ml-auto flex -space-x-1.5">
+            {assignees.slice(0, 3).map(m => <MemberAvatar key={m.id} member={m} size="sm" />)}
+            {assignees.length > 3 && (
+              <div className="w-6 h-6 rounded-full bg-surface-700 border border-surface-600 flex items-center justify-center text-[9px] text-slate-400">
+                +{assignees.length - 3}
+              </div>
+            )}
           </div>
         )}
       </div>
