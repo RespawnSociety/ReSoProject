@@ -72,6 +72,8 @@ export default function Column({ column, tasks, onAddTask, onCardClick }) {
               rows={2}
               className="w-full bg-transparent text-sm text-slate-200 placeholder-slate-500 resize-none outline-none"
               autoFocus
+              autoComplete="off"
+              spellCheck={false}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAddSubmit(e) }
                 if (e.key === 'Escape') { setShowAdd(false); setNewTitle('') }
