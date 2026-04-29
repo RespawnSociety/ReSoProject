@@ -7,7 +7,7 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core'
-import { arrayMove } from '@dnd-kit/sortable'
+
 import Column from './Column'
 import TaskModal from './TaskModal'
 import { TaskCardOverlay } from './TaskCard'
@@ -25,21 +25,20 @@ export default function KanbanBoard({ project, filterPriority, filterLabel, sear
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   )
 
-  const getColumnForTask = (taskId) => {
+  const getColumnForTask = taskId => {
     for (const colId of project.columns) {
       if (project.tasks[colId]?.find(t => t.id === taskId)) return colId
     }
     return null
   }
 
-  const filterTasks = (tasks) => {
-    return tasks.filter(task => {
+  const filterTasks = tasks =>
+    tasks.filter(task => {
       if (filterPriority && task.priority !== filterPriority) return false
       if (filterLabel && !(task.labels || []).includes(filterLabel)) return false
       if (searchQuery && !task.title.toLowerCase().includes(searchQuery.toLowerCase())) return false
       return true
     })
-  }
 
   const handleDragStart = ({ active }) => {
     const colId = getColumnForTask(active.id)
@@ -56,7 +55,6 @@ export default function KanbanBoard({ project, filterPriority, filterLabel, sear
     const fromCol = getColumnForTask(active.id)
     if (!fromCol) return
 
-    // Dropped over another task
     const toCol = getColumnForTask(over.id) || over.id
 
     if (fromCol === toCol) {
@@ -67,7 +65,6 @@ export default function KanbanBoard({ project, filterPriority, filterLabel, sear
         reorderTask(project.id, fromCol, oldIdx, newIdx)
       }
     } else {
-      // Moving to a different column
       const toTasks = project.tasks[toCol] || []
       const overIndex = toTasks.findIndex(t => t.id === over.id)
       const insertAt = overIndex >= 0 ? overIndex : toTasks.length
@@ -75,16 +72,12 @@ export default function KanbanBoard({ project, filterPriority, filterLabel, sear
     }
   }
 
-  const handleAddTask = (columnId, taskData) => {
-    createTask(project.id, columnId, taskData)
-  }
-
   const handleCardClick = (task, columnId) => {
     setModalTask(task)
     setModalColumnId(columnId)
   }
 
-  const handleModalSave = (updates) => {
+  const handleModalSave = updates => {
     if (modalTask?.id) {
       updateTask(project.id, modalColumnId, modalTask.id, updates)
     } else {
@@ -95,14 +88,12 @@ export default function KanbanBoard({ project, filterPriority, filterLabel, sear
   }
 
   const handleModalDelete = () => {
-    if (modalTask?.id) {
-      deleteTask(project.id, modalColumnId, modalTask.id)
-    }
+    if (modalTask?.id) deleteTask(project.id, modalColumnId, modalTask.id)
     setModalTask(null)
     setModalColumnId(null)
   }
 
-  const handleModalMove = (toColumnId) => {
+  const handleModalMove = toColumnId => {
     if (modalTask?.id && modalColumnId !== toColumnId) {
       const toTasks = project.tasks[toColumnId] || []
       moveTask(project.id, modalColumnId, toColumnId, modalTask.id, toTasks.length)
@@ -120,14 +111,15 @@ export default function KanbanBoard({ project, filterPriority, filterLabel, sear
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <div className="flex gap-5 p-6 overflow-x-auto flex-1 items-start">
+        <div className="flex gap-4 p-5 overflow-x-auto flex-1 items-start">
           {columns.map(col => (
             <Column
               key={col.id}
               column={col}
               tasks={filterTasks(project.tasks[col.id] || [])}
-              onAddTask={(taskData) => handleAddTask(col.id, taskData)}
-              onCardClick={(task) => handleCardClick(task, col.id)}
+              projectKey={project.key}
+              onAddTask={taskData => createTask(project.id, col.id, taskData)}
+              onCardClick={task => handleCardClick(task, col.id)}
             />
           ))}
         </div>
